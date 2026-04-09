@@ -6,11 +6,13 @@ import java.util.ArrayList;
 import java.util.Map;
 
 public class App {
-    private static final String URL = "jdbc:mysql://localhost:3306/proj_postman";
-    private static final String USER = "root";
-    private static final String PASS = "admin123";
+    private static final String URL = "jdbc:h2:mem:proj_postman;DB_CLOSE_DELAY=-1";
+    private static final String USER = "sa";
+    private static final String PASS = "";
 
     public static void main(String[] args) {
+	iniciaBanco();
+
         // http://localhost:7000/usuarios
         var app = Javalin.create().start(7000);
 
@@ -27,10 +29,17 @@ public class App {
                     "email", rs.getString("email")));
                 }
                 request.json(lista);
-            } catch (SQLException e) {
-                request.status(500).result("Erro: " + e.getMessage());
             }
         });
+
+	// Método Get (get by id)
+	/* app.get("/usuarios/{id}", request -> {
+	    try(Connection conn = DriverManager.getConection(URL, USER, PASS)) {
+		String sql = "SELECT * FROM usuarios WHERE id = {id}";
+               		PreparedStatement stmt = conn.prepareStatement(sql);
+                		ResultSet rs = stmt.executeQuery();
+	    } */
+	});
 
         // Método Post
         app.post("/usuarios", request -> {
@@ -44,8 +53,6 @@ public class App {
                 stmt.executeUpdate();
                 
                 request.status(201).result("Usuário criado");
-            } catch (SQLException e) {
-                request.status(500).result("Erro: " + e.getMessage());
             }
         });
 
@@ -63,5 +70,17 @@ public class App {
                 else request.status(404).result("Usuário não encontrado");
             }
         });
+    }
+    
+    private static void iniciaBanco() {
+	try (Connection conn = DriverManager.getConnection(URL, USER, PASS)) {
+		String sql = "CREATE TABLE usuarios (id INT AUTO_INCREMENT PRIMARY KEY, nome VARCHAR(100), email VARCHAR(100))";
+		conn.createStatement().execute(sql);
+		System.out.println("----------------------------------");
+		System.out.println("Banco criado na memória");
+		System.out.println("----------------------------------");
+	} catch (SQLException e) {
+		e.printStackTrace();
+	}
     }
 }
